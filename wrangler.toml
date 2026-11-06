@@ -16,4 +16,4 @@ bucket_name = "vahini-media"
 [[d1_databases]]
 binding = "DB"
 database_name = "vahini-db"
-database_id = "REPLACE_WITH_THE_CLIENT_D1_DATABASE_ID"
+database_id = "a41f54e5-3b0d-46a8-953b-2529ed2528d2"
