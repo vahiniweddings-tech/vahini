@@ -393,3 +393,84 @@ html{scroll-behavior:auto}
 
 /* Explicit installed-state rule: this must override the install button's display!important style. */
 .site-topbar.topbar .site-actions .install-button[hidden]{display:none!important}
+
+/* Desktop/tablet home hero only: editorial text at left, uncropped media at right.
+   Phone layout (below 768px) remains exactly as before. */
+@media (min-width: 768px) {
+  .site-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 45%) minmax(0, 55%);
+    height: auto;
+    min-height: clamp(650px, 78svh, 850px);
+    background: var(--bg);
+    color: var(--fg);
+    isolation: isolate;
+  }
+  .site-hero > .managed-art {
+    position: relative;
+    inset: auto;
+    z-index: 0;
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    background: #25221f;
+  }
+  .site-hero > .managed-art img,
+  .site-hero > .managed-art video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    filter: none;
+  }
+  .site-hero .site-hero-shade { display: none; }
+  .site-hero .site-hero-content {
+    position: relative;
+    inset: auto;
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: clamp(45px, 6vw, 110px) clamp(28px, 4.2vw, 95px) clamp(90px, 8vw, 130px);
+    width: 100%;
+    max-width: none;
+    background: linear-gradient(130deg, var(--bg), var(--card));
+  }
+  .site-hero .site-hero-content .site-kicker {
+    border-left: 2px solid var(--accent);
+    padding-left: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .site-hero h1 {
+    font-size: clamp(43px, 5.2vw, 85px);
+    line-height: 1.095;
+    margin: 24px 0 31px;
+    max-width: 100%;
+    overflow-wrap: normal;
+  }
+  .site-hero .hero-description {
+    color: var(--muted);
+    font-size: clamp(15px, 1.25vw, 19px);
+    line-height: 1.75;
+    margin: 0 0 32px;
+  }
+  .site-hero .hero-actions { gap: 17px 28px; }
+  .site-hero .scroll-cue {
+    right: auto;
+    left: clamp(28px, 4.2vw, 95px);
+    bottom: 29px;
+    color: var(--muted);
+  }
+}
+@media (min-width: 768px) and (max-width: 1050px) {
+  .site-hero { grid-template-columns: minmax(0, 48%) minmax(0, 52%); }
+  .site-hero .site-hero-content { padding-right: 24px; padding-left: 30px; }
+  .site-hero h1 { font-size: clamp(40px, 4.75vw, 52px); }
+  .site-hero .scroll-cue { left: 30px; }
+}
