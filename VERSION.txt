@@ -1,1 +1,2 @@
-VAHINI WEDDINGS — Uncropped home + gallery hero; independent admin-selectable uploaded hero photographs; responsive on mobile and desktop.
+Vahini Weddings — Direct video uploads to R2 + 45 years photography heritage.
+Retains Cloudflare Worker/D1/R2, image hero selection, mobile hero and existing site design.

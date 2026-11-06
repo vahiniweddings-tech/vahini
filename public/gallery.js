@@ -9,7 +9,8 @@
     const button=document.createElement('button');button.className='media-card';button.type='button';
     button.setAttribute('aria-label','View '+item.title);
     const thumb=item.poster||(item.kind==='image'?item.src:null);
-    if(thumb){const image=document.createElement('img');image.src=thumb;image.alt=item.title;image.loading=index<3?'eager':'lazy';image.decoding='async';image.addEventListener('error',()=>image.remove(),{once:true});button.append(image)}
+    if(thumb){const image=document.createElement('img');image.src=thumb;image.alt=item.title;image.loading=index<3?'eager':'lazy';image.decoding='async';image.addEventListener('error',()=>{image.remove();if(item.kind==='video')button.classList.add('video-no-poster')},{once:true});button.append(image)}
+    else if(item.kind==='video')button.classList.add('video-no-poster');
     if(item.kind==='video'){const play=document.createElement('span');play.className='play-indicator';play.textContent='▶';button.append(play)}
     const caption=document.createElement('span');caption.className='media-caption';caption.textContent=item.title;button.append(caption);
     button.addEventListener('click',()=>openViewer(index));return button;

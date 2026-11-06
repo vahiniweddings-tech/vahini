@@ -2,10 +2,12 @@
 const ADMIN_ID = '9027';
 const SESSION_SECONDS = 8 * 3600;
 const CHUNK_SIZE = 16 * 1024 * 1024;
-const MAX_FILE_SIZE = 200 * 1024 ** 2; // High-resolution original images, up to 200 MiB each.
+const MAX_IMAGE_SIZE = 200 * 1024 ** 2; // Original photographs: 200 MiB.
+const MAX_VIDEO_SIZE = 5 * 1024 ** 3; // R2 multipart videos: up to 5 GiB per video.
 const TYPES = new Map([
   ['image/jpeg', 'jpg'], ['image/png','png'], ['image/webp','webp'],
-  ['image/avif','avif']
+  ['image/avif','avif'],
+  ['video/mp4','mp4'], ['video/webm','webm'], ['video/quicktime','mov']
 ]);
 const CATEGORIES = ['general','film','indoor'];
 const encoder = new TextEncoder();
@@ -43,9 +45,9 @@ function ensureOrigin(req){
 }
 function mediaUrl(key){return key?'/media/'+key:null}
 function toMedia(row){
-  // YouTube videos are references, NOT uploaded R2 objects. Images remain original files in R2.
+  // YouTube videos are references; uploaded photographs and films are R2 objects.
   const youtubeId = row.object_key?.startsWith('youtube/') ? row.object_key.slice(8) : null;
-  return {id:row.id,title:row.title,category:row.category,kind:row.kind,
+  return {id:row.id,title:row.title,category:row.category,kind:row.kind,mime:row.mime,
     youtubeId,src:youtubeId?'https://www.youtube.com/watch?v='+youtubeId:mediaUrl(row.object_key),
     poster:mediaUrl(row.poster_key)||(youtubeId?'https://i.ytimg.com/vi/'+youtubeId+'/hqdefault.jpg':null),
     size:row.byte_size,hero:!!row.is_hero,createdAt:row.created_at};
@@ -141,10 +143,12 @@ async function startUpload(req,env){
   const size=Number(data.size);
   const category=String(data.category||'');
   const title=String(data.title||'').trim().slice(0,120);
-  if(!suffix||!Number.isSafeInteger(size)||size<=0||size>MAX_FILE_SIZE||!CATEGORIES.includes(category)||!title)return error('Unsupported image or invalid size, title or category. Maximum 200 MiB per image.');
-  const kind='image';
+  const kind=mime.startsWith('video/')?'video':'image';
+  const maxSize=kind==='video'?MAX_VIDEO_SIZE:MAX_IMAGE_SIZE;
+  if(!suffix||!Number.isSafeInteger(size)||size<=0||size>maxSize||!CATEGORIES.includes(category)||!title)
+    return error('Unsupported media or invalid file size, title or category. Photos: 200 MiB. Videos: 5 GiB.');
   const id=crypto.randomUUID();
-  const key='images/'+id+'.'+suffix;
+  const key=(kind==='video'?'videos/':'images/')+id+'.'+suffix;
   const upload=await env.MEDIA.createMultipartUpload(key,{httpMetadata:{contentType:mime,cacheControl:'public, max-age=31536000, immutable'}});
   try{
     await env.DB.prepare('INSERT INTO media (id,title,category,kind,mime,byte_size,object_key,upload_id,status,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)')

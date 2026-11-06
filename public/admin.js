@@ -28,6 +28,12 @@ document.getElementById('logout').addEventListener('click',async()=>{
   await api('/api/logout',{method:'POST'}).catch(()=>{});dashboard.hidden=true;login.hidden=false;
 });
 function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node}
+function fileMime(file){
+  const type=(file.type||'').toLowerCase();
+  if(['image/jpeg','image/png','image/webp','image/avif','video/mp4','video/webm','video/quicktime'].includes(type))return type;
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',avif:'image/avif',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime'})[ext]||'';
+}
 function bytes(n){return n>=1e12?(n/1e12).toFixed(2)+' TB':n>=1e9?(n/1e9).toFixed(2)+' GB':n>=1e6?(n/1e6).toFixed(1)+' MB':(n/1000).toFixed(0)+' KB'}
 async function refresh(append=false){
   try{
@@ -117,16 +123,53 @@ async function posterFor(file){
     return await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.78));
   }finally{clean()}
 }
+// Generate a lightweight thumbnail locally; never upload the full video to make a preview.
+async function posterForVideo(file){
+  return new Promise(resolve=>{
+    const video=document.createElement('video');const objectUrl=URL.createObjectURL(file);
+    let finished=false,capturing=false;
+    const timer=setTimeout(()=>finish(null),15000);
+    function finish(blob){if(finished)return;finished=true;clearTimeout(timer);video.pause();
+      video.removeAttribute('src');video.load();URL.revokeObjectURL(objectUrl);resolve(blob)}
+    function capture(){
+      if(finished||capturing||!video.videoWidth||!video.videoHeight)return;
+      capturing=true;
+      try{
+        const ratio=Math.min(1,960/video.videoWidth,960/video.videoHeight);
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(video.videoWidth*ratio));
+        canvas.height=Math.max(1,Math.round(video.videoHeight*ratio));
+        canvas.getContext('2d',{alpha:false}).drawImage(video,0,0,canvas.width,canvas.height);
+        canvas.toBlob(blob=>finish(blob),'image/webp',.76);
+      }catch{finish(null)}
+    }
+    video.muted=true;video.playsInline=true;video.preload='auto';
+    video.addEventListener('error',()=>finish(null),{once:true});
+    video.addEventListener('seeked',capture,{once:true});
+    video.addEventListener('loadeddata',()=>{
+      if(!Number.isFinite(video.duration)||video.duration<=1)capture();
+    },{once:true});
+    video.addEventListener('loadedmetadata',()=>{
+      if(video.duration>1&&Number.isFinite(video.duration)){
+        try{video.currentTime=Math.min(1,video.duration/3)}catch{capture()}
+      }else if(video.readyState>=2)capture();
+    },{once:true});
+    video.src=objectUrl;video.load();
+  });
+}
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function retry(fn,count=3){let err;for(let a=0;a<count;a++)try{return await fn()}catch(e){err=e;if(a<count-1)await pause(350*(2**a))}throw err}
-async function uploadOne(file,category){
+async function uploadOne(file,category,expectedKind){
   const line=el('div','queue-row');const name=el('strong','',file.name);const progress=document.createElement('progress');progress.max=file.size;progress.value=0;
   const state=el('span','','Preparing…');line.append(name,progress,state);queue.prepend(line);
   let uploadId=null;
   try{
-    if(!/^image\/(jpeg|png|webp|avif|gif)$/.test(file.type)||file.size>200*1024*1024)throw Error('Choose a supported photo under 200 MiB.');
+    const mime=fileMime(file);
+    const valid=expectedKind==='video' ? /^video\/(mp4|webm|quicktime)$/.test(mime) : /^image\/(jpeg|png|webp|avif)$/.test(mime);
+    const max=expectedKind==='video'?5*1024**3:200*1024**2;
+    if(!valid||!file.size||file.size>max)throw Error(expectedKind==='video'?'Use MP4, WebM or MOV (maximum 5 GiB).':'Use JPEG, PNG, WebP or AVIF (maximum 200 MiB).');
     const title=file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').slice(0,120)||'Untitled';
-    const info=await api('/api/uploads/start',{method:'POST',body:JSON.stringify({title,category,mime:file.type,size:file.size})});
+    const info=await api('/api/uploads/start',{method:'POST',body:JSON.stringify({title,category,mime,size:file.size})});
     uploadId=info.id;
     const parts=new Array(info.parts);let next=0,completed=0;
     state.textContent='Uploading…';
@@ -141,9 +184,11 @@ async function uploadOne(file,category){
     await Promise.all(Array.from({length:Math.min(3,info.parts)},()=>worker()));
     state.textContent='Publishing…';
     await api(`/api/uploads/${uploadId}/finish`,{method:'POST',body:JSON.stringify({parts})});
-    try{state.textContent='Generating preview…';const preview=await posterFor(file);
+    try{
+      state.textContent='Generating thumbnail…';
+      const preview=expectedKind==='video'?await posterForVideo(file):await posterFor(file);
       if(preview&&preview.size<=2*1024*1024)await api(`/api/admin/media/${uploadId}/poster`,{method:'PUT',body:preview,headers:{'Content-Type':preview.type}});
-    }catch(err){console.warn('Preview generation skipped',err)}
+    }catch(err){console.warn('Thumbnail generation skipped',err)}
     state.textContent='Published';line.classList.add('uploaded');return true;
   }catch(err){
     state.textContent='Failed: '+err.message;line.classList.add('upload-failed');
@@ -152,18 +197,22 @@ async function uploadOne(file,category){
     return false;
   }
 }
-document.getElementById('upload').addEventListener('change',async e=>{
-  const files=Array.from(e.target.files||[]);e.target.value='';if(!files.length)return;
-  const category=document.getElementById('uploadCategory').value;
-  const input=document.getElementById('upload');input.disabled=true;
-  let ok=0;
-  for(let i=0;i<files.length;i++){
-    setStatus(`Uploading ${i+1} of ${files.length}: ${files[i].name}`);
-    if(await uploadOne(files[i],category))ok++;
-  }
-  input.disabled=false;setStatus(`${ok} of ${files.length} file(s) uploaded and published.${ok!==files.length?' Check failed uploads below.':''}`,ok!==files.length);
-  await refresh();
-});
+async function uploadSelected(inputId,categoryId,kind){
+  const input=document.getElementById(inputId);const files=Array.from(input.files||[]);input.value='';
+  if(!files.length)return;
+  const category=document.getElementById(categoryId).value;
+  input.disabled=true;let ok=0;
+  try{
+    for(let i=0;i<files.length;i++){
+      setStatus(`Uploading ${kind} ${i+1} of ${files.length}: ${files[i].name}`);
+      if(await uploadOne(files[i],category,kind))ok++;
+    }
+    setStatus(`${ok} of ${files.length} ${kind} file(s) uploaded and published.${ok!==files.length?' Check failed uploads below.':''}`,ok!==files.length);
+    await refresh();
+  }finally{input.disabled=false}
+}
+document.getElementById('upload').addEventListener('change',()=>uploadSelected('upload','uploadCategory','image'));
+document.getElementById('videoUpload').addEventListener('change',()=>uploadSelected('videoUpload','videoCategory','video'));
 document.getElementById('youtubeForm').addEventListener('submit',async event=>{
   event.preventDefault();const button=document.getElementById('youtubeSubmit');
   const title=document.getElementById('youtubeTitle').value.trim();

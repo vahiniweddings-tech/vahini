@@ -81,6 +81,29 @@ out=await send('/api/admin/media/'+ytId,'PATCH',{category:'indoor',title:'Indoor
 out=await send('/api/media?category=indoor');assert.equal(out.val.items[0].title,'Indoor film');
 out=await send('/api/admin/media/'+ytId+'/poster','PUT',new Uint8Array(12).fill(42),true,{'content-length':'12','content-type':'image/webp'});assert.equal(out.res.status,200);
 out=await send('/api/media?category=indoor');assert.match(out.val.items[0].poster,/^\/media\/posters\/[a-f0-9-]{36}\.webp$/);
+// Direct MP4/WebM/MOV uploads must be saved in R2, streamed with Range, and removable.
+out=await send('/api/uploads/start','POST',{title:'Not a movie',category:'film',mime:'video/x-msvideo',size:250},true);
+assert.equal(out.res.status,400);
+for(const [mime,extension] of [['video/mp4','mp4'],['video/webm','webm'],['video/quicktime','mov']]){
+  out=await send('/api/uploads/start','POST',{title:'Wedding film '+extension,category:'film',mime,size:4096},true);
+  assert.equal(out.res.status,200,out.val?.error);
+  const uploadId=out.val.id;
+  assert.equal(out.val.parts,1);
+  out=await send(`/api/uploads/${uploadId}/part?n=1`,'PUT',new Uint8Array(4096).fill(41),true,{'Content-Type':'application/octet-stream','Content-Length':'4096'});
+  assert.equal(out.res.status,200,out.val?.error);
+  out=await send(`/api/uploads/${uploadId}/finish`,'POST',{parts:[out.val]},true);
+  assert.equal(out.res.status,200,out.val?.error);
+  assert.equal(out.val.media.kind,'video');assert.equal(out.val.media.mime,mime);
+  assert.equal(out.val.media.src,`/media/videos/${uploadId}.${extension}`);
+  out=await send('/api/media?category=film');assert(out.val.items.some(item=>item.id===uploadId&&item.kind==='video'));
+  out=await send(`/media/videos/${uploadId}.${extension}`,'GET',undefined,false,{'Range':'bytes=100-299'});
+  assert.equal(out.res.status,206);assert.equal(out.res.headers.get('Content-Range'),'bytes 100-299/4096');
+  assert.equal(out.res.headers.get('Content-Type'),mime);
+  assert.equal((await out.res.arrayBuffer()).byteLength,200);
+  out=await send('/api/admin/media/'+uploadId,'DELETE',undefined,true);
+  assert.equal(out.res.status,200,out.val?.error);
+  out=await send(`/media/videos/${uploadId}.${extension}`);assert.equal(out.res.status,404);
+}
 out=await send('/api/admin/stats','GET',null,true);assert.equal(out.val.count,2);assert.equal(out.val.totalBytes,100);
 out=await send('/api/admin/media/'+ytId,'DELETE',undefined,true);assert.equal(out.res.status,200);
 out=await send('/api/admin/stats','GET',null,true);assert.equal(out.val.totalBytes,100);
@@ -88,4 +111,4 @@ out=await send('/api/admin/media/'+id,'DELETE',undefined,true);assert.equal(out.
 out=await send('/api/media?category=all');assert.equal(out.val.items.length,0);
 out=await send('/api/hero-images');assert.equal(out.val.home,null);assert.equal(out.val.gallery,null);
 
-console.log('PASS: separate R2 hero selections; login; protected photo upload; poster; filters; YouTube URL validation, add, duplicate, edit, custom thumbnail, delete; stats exclude YouTube; range; cleanup');
+console.log('PASS: direct MP4/WebM/MOV uploads, byte-range video playback, cleanup; separate R2 hero selections; login; protected photo upload; poster; filters; YouTube URL validation, add, duplicate, edit, custom thumbnail, delete; stats exclude YouTube; range; cleanup');

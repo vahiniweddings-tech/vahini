@@ -587,3 +587,17 @@ html{scroll-behavior:auto}
   .gallery-hero .hero-mark{opacity:.18;font-size:clamp(55px,16vw,100px)}
 }
 .admin-actions .hero-selected{border-color:var(--accent);background:var(--surface);font-weight:600}
+
+/* Vahini heritage: editorial addition that follows the existing light/dark palette. */
+.heritage-band{display:grid;grid-template-columns:minmax(150px,.75fr) minmax(0,2fr);gap:clamp(28px,5vw,85px);align-items:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface)}
+.heritage-number{font:400 clamp(86px,13vw,185px)/.8 Georgia,serif;letter-spacing:-.085em;color:var(--fg);white-space:nowrap}
+.heritage-number span{display:block;margin:20px 0 0 8px;font:400 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.35em;color:var(--muted)}
+.heritage-copy{max-width:670px}
+.heritage-copy h2{font:400 clamp(33px,4.5vw,60px)/1.12 Georgia,serif;letter-spacing:-.04em;margin:16px 0}
+.heritage-copy>p:not(.site-kicker){color:var(--muted);font-size:clamp(14px,1.5vw,17px);line-height:1.85;max-width:580px}
+.heritage-copy .site-underline{display:inline-flex;margin-top:14px}
+@media(max-width:700px){.heritage-band{grid-template-columns:1fr;gap:20px}.heritage-number{font-size:clamp(85px,22vw,140px)}.heritage-number span{margin-top:15px}}
+
+/* A newly uploaded film stays visible while its cover is unavailable. */
+.gallery-grid .media-card.video-no-poster{display:block;aspect-ratio:4/3;min-height:175px;background:linear-gradient(135deg,#25221e,#736554);color:#fff}
+.gallery-grid .media-card.video-no-poster .media-caption{color:#fff}
