@@ -567,6 +567,7 @@ html{scroll-behavior:auto}
     object-fit:contain;object-position:center;
     filter:none;
   }
+  .site-hero > .managed-art{z-index:0}
   .site-hero > .managed-art video{display:none}
   .site-hero .site-hero-shade,.gallery-hero .hero-shade,.gallery-hero .hero-bottom{display:none}
   .site-hero .site-hero-content,
