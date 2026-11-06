@@ -1,5 +1,5 @@
 // Cache only lightweight shell files. API, private admin and video/images MUST stay network-first.
-const CACHE='vahini-youtube-edition-3';
+const CACHE='vahini-hero-photo-layout-4';
 const SHELL=['/','/index.html','/site.js','/app.css','/manifest.webmanifest','/assets/icon-192.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));

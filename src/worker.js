@@ -226,9 +226,42 @@ async function deleteMedia(env,id){
   if(keys.length)await env.MEDIA.delete(keys);
   return json({ok:true});
 }
+// Hero selections are stored in the studio's existing R2 bucket; D1 needs no migration.
+const HERO_SELECTIONS_KEY='settings/hero-images.json';
+async function readHeroSelections(env){
+  const object=await env.MEDIA.get(HERO_SELECTIONS_KEY);
+  if(!object)return {home:null,gallery:null};
+  try{
+    const data=JSON.parse(await object.text());
+    return {home:typeof data.home==='string'?data.home:null,gallery:typeof data.gallery==='string'?data.gallery:null};
+  }catch{return {home:null,gallery:null}}
+}
+async function heroImages(env){
+  const selections=await readHeroSelections(env);
+  const fallback=await env.DB.prepare("SELECT * FROM media WHERE status='published' AND kind='image' ORDER BY is_hero DESC, sort_order DESC, created_at DESC LIMIT 1").first();
+  async function resolve(id){
+    if(!id)return fallback;
+    const item=await env.DB.prepare("SELECT * FROM media WHERE id=? AND status='published' AND kind='image'").bind(id).first();
+    return item||fallback;
+  }
+  const [home,gallery]=await Promise.all([resolve(selections.home),resolve(selections.gallery)]);
+  return json({home:home?toMedia(home):null,gallery:gallery?toMedia(gallery):null,selections});
+}
+async function updateHeroImage(request,env){
+  let data;try{data=await readJSON(request,1024)}catch{return error('Invalid hero image selection')}
+  if(!['home','gallery'].includes(data.page))return error('Choose home or gallery');
+  if(typeof data.mediaId!=='string'||!/^[a-f0-9-]{36}$/.test(data.mediaId))return error('Choose a valid uploaded photograph');
+  const media=await env.DB.prepare("SELECT id FROM media WHERE id=? AND kind='image' AND status='published'").bind(data.mediaId).first();
+  if(!media)return error('Only uploaded, published photographs can be selected',404);
+  const selections=await readHeroSelections(env);
+  selections[data.page]=media.id;
+  await env.MEDIA.put(HERO_SELECTIONS_KEY,JSON.stringify(selections),{httpMetadata:{contentType:'application/json'}});
+  return json({ok:true,selections});
+}
 async function handleAPI(request,env,url){
   const path=url.pathname,method=request.method;
   if(path==='/api/media'&&method==='GET')return publicList(url,env);
+  if(path==='/api/hero-images'&&method==='GET')return heroImages(env);
   if(path==='/api/featured'&&method==='GET'){
     const featured=await env.DB.prepare("SELECT * FROM media WHERE status='published' AND is_hero=1 LIMIT 1").first();
     return json({item:featured?toMedia(featured):null});
@@ -240,6 +273,7 @@ async function handleAPI(request,env,url){
   }
   if(!await sessionOK(request,env))return error('Please sign in as administrator',401);
   if(method!=='GET')ensureOrigin(request);
+  if(path==='/api/admin/hero-images'&&method==='PUT')return updateHeroImage(request,env);
   if(path==='/api/admin/stats'&&method==='GET'){
     const stats=await env.DB.prepare("SELECT COUNT(*) as count,COALESCE(SUM(byte_size),0) as totalBytes FROM media WHERE status='published'").first();
     return json(stats);

@@ -3,7 +3,7 @@
 const login=document.getElementById('adminLogin'),dashboard=document.getElementById('adminDashboard');
 const message=document.getElementById('adminMessage'),loginMessage=document.getElementById('loginMessage');
 const adminGrid=document.getElementById('adminGrid'),queue=document.getElementById('uploadQueue');
-let adminOffset=0;
+let adminOffset=0,activeHomeHero=null,activeGalleryHero=null;
 const setStatus=(str,bad=false)=>{message.textContent=str;message.classList.toggle('error',bad)};
 function api(path,options={}){
   const headers={'X-Vahini-Admin':'1',...(options.body&&!(options.body instanceof Blob)?{'Content-Type':'application/json'}:{}),...options.headers};
@@ -32,7 +32,8 @@ function bytes(n){return n>=1e12?(n/1e12).toFixed(2)+' TB':n>=1e9?(n/1e9).toFixe
 async function refresh(append=false){
   try{
     const offset=append?adminOffset:0;
-    const [data,stats]=await Promise.all([api('/api/admin/media?offset='+offset),api('/api/admin/stats')]);
+    const [data,stats,heroImages]=await Promise.all([api('/api/admin/media?offset='+offset),api('/api/admin/stats'),api('/api/hero-images')]);
+    activeHomeHero=heroImages.home?.id||null;activeGalleryHero=heroImages.gallery?.id||null;
     document.getElementById('mediaTotal').textContent=`${stats.count} published item${stats.count===1?'':'s'} · ${bytes(stats.totalBytes)} used`;
     if(!append){adminGrid.replaceChildren();adminOffset=0}
     adminGrid.append(...data.items.map(mediaCard));adminOffset+=data.items.length;
@@ -58,9 +59,24 @@ function mediaCard(item){
     try{save.disabled=true;await api('/api/admin/media/'+item.id,{method:'PATCH',body:JSON.stringify({title:name.value.trim(),category:cat.value})});setStatus('Changes saved. Visible to all visitors.');await refresh()}
     catch(err){setStatus(err.message,true)}finally{save.disabled=false}
   });
-  const hero=button(item.hero?'Featured on cover':'Set as cover',async()=>{
-    try{await api('/api/admin/media/'+item.id,{method:'PATCH',body:JSON.stringify({hero:true})});setStatus('Cover updated.');await refresh()}catch(err){setStatus(err.message,true)}
-  });
+  // Each banner can use any photograph already uploaded to the studio's media library.
+  const heroButtons=[];
+  if(item.kind==='image'){
+    for(const [page,label,active] of [
+      ['home','Home hero',item.id===activeHomeHero],
+      ['gallery','Gallery hero',item.id===activeGalleryHero]
+    ]){
+      const select=button(active?'✓ '+label:'Set '+label,async()=>{
+        select.disabled=true;
+        try{
+          await api('/api/admin/hero-images',{method:'PUT',body:JSON.stringify({page,mediaId:item.id})});
+          setStatus((page==='home'?'Homepage':'Gallery')+' hero image updated.');await refresh();
+        }catch(err){setStatus(err.message,true);select.disabled=false}
+      });
+      if(active){select.classList.add('hero-selected');select.setAttribute('aria-pressed','true')}
+      heroButtons.push(select);
+    }
+  }
   // Owner-controlled thumbnail: uploading an image here updates the film cover immediately.
   const customCover=button('Change thumbnail',()=>coverInput.click());
   const coverInput=document.createElement('input');coverInput.type='file';coverInput.accept='image/jpeg,image/png,image/webp,image/avif';coverInput.hidden=true;
@@ -82,7 +98,7 @@ function mediaCard(item){
     if(!confirm(`Permanently delete "${item.title}" from the website and storage? This cannot be undone.`))return;
     try{await api('/api/admin/media/'+item.id,{method:'DELETE'});setStatus('Media deleted.');await refresh()}catch(err){setStatus(err.message,true)}
   });remove.classList.add('danger');
-  actions.append(save,hero,customCover,move,remove,coverInput);body.append(label,catLabel,actions);
+  actions.append(save,...heroButtons,customCover,move,remove,coverInput);body.append(label,catLabel,actions);
   card.append(preview,body);return card;
 }
 async function posterFor(file){

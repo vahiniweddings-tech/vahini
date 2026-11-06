@@ -2,6 +2,14 @@
 
 Public website and real authenticated admin backend. Not a demo or GitHub-Pages-only site.
 
+## Featured homepage and gallery photographs
+
+Both hero sections have a plain background and a responsive, uncropped image. On desktop/tablet the text is on the left and the photograph is on the right. On phones the full image appears above the text, with no photo cropping.
+
+To change either photograph: open `/admin.html`, sign in, scroll to an uploaded PHOTO in the Media library, then select **Set Home hero** or **Set Gallery hero**. These can be different images. You cannot choose a YouTube film as a hero photo. Changes are live for site visitors after refreshing. If no hero photo has been chosen, the website displays a published photograph automatically.
+
+The two selections are stored as a small settings object in the **existing R2 bucket**, without new database tables or D1 migrations. No gallery images are changed or deleted when a hero is selected.
+
 ## Features
 
 - Real original photos uploaded through the website to client-owned **Cloudflare R2 Standard**; stored and served as `/media/images/...` under the site domain. No Cloudinary, ImageKit, Flickr or separate image host. Responsive thumbnails are generated locally by admin browser and stored in R2 to reduce image transfer; originals remain available in the viewer.

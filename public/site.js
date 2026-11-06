@@ -64,13 +64,13 @@
   // No third-party illustrative gallery photos. Public art slots pull ONLY from the live, owner-controlled uploads.
   const slots=[...document.querySelectorAll('[data-media-slot]')];
   if(slots.length){
-    Promise.all([fetch('/api/media?limit=36').then(r=>r.ok?r.json():Promise.reject()),fetch('/api/featured').then(r=>r.ok?r.json():{item:null})])
-      .then(([result,featured])=>{
+    Promise.all([fetch('/api/media?limit=36').then(r=>r.ok?r.json():Promise.reject()),fetch('/api/hero-images').then(r=>r.ok?r.json():{home:null})])
+      .then(([result,heroImages])=>{
         const photos=result.items.filter(x=>x.kind==='image');
         let idx=0;
         for(const slot of slots){
           let item;
-          if(slot.dataset.mediaSlot==='hero')item=featured.item||photos[idx++];
+          if(slot.dataset.mediaSlot==='hero')item=heroImages.home||photos[idx++];
           else item=photos[idx++];
           if(!item)continue;
           const src=item.poster||item.src;
