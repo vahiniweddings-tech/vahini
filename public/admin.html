@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="#faf9f7" media="(prefers-color-scheme: light)" name="theme-color"/><meta content="#111110" media="(prefers-color-scheme: dark)" name="theme-color"/><title>Admin — VAHINI WEDDINGS</title><link href="app.css" rel="stylesheet"/><link href="manifest.webmanifest" rel="manifest"/><link href="assets/icon-192.png" rel="icon" sizes="192x192" type="image/png"/><link href="assets/icon-192.png" rel="apple-touch-icon"/><meta content="noindex, nofollow" name="robots"/></head><body class="admin-body"><header class="topbar site-topbar" id="siteHeader">
+<a aria-label="Vahini Weddings, home" class="brand" href="index.html">VAHINI WEDDINGS</a>
+<div class="site-actions"><button aria-label="Install Vahini Weddings" class="install-button" id="installApp" title="Install app" type="button">Install</button>
+<button aria-label="Switch color theme" class="theme-toggle" id="themeToggle" title="Switch color theme" type="button">
+<svg aria-hidden="true" fill="none" height="21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" viewbox="0 0 24 24" width="21"><path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"></path></svg>
+</button>
+<button aria-controls="primaryNav" aria-expanded="false" aria-label="Open menu" class="menu-toggle" id="menuToggle" title="Menu" type="button">
+<svg aria-hidden="true" class="menu-icon" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-width="1.8" viewbox="0 0 24 24" width="24"><path d="M4 6.5h16M4 12h16M4 17.5h16"></path></svg>
+</button>
+</div>
+<nav aria-label="Main navigation" class="site-nav" hidden="" id="primaryNav">
+<a data-page="index.html" href="index.html">Home</a>
+<a data-page="about.html" href="about.html">About us</a>
+<a data-page="services.html" href="services.html">Our services</a>
+<a data-page="gallery.html" href="gallery.html#gallery">Gallery</a>
+<a href="gallery.html#films" id="filmNav">Wedding films</a>
+<a data-page="contact.html" href="contact.html">Contact us</a>
+<a class="menu-call" href="tel:+919895066015">Call +91 98950 66015 <span aria-hidden="true">↗</span></a>
+</nav>
+</header><main class="admin-main"><section class="admin-login" hidden="" id="adminLogin"><p class="site-kicker">PRIVATE ACCESS</p><h1>Studio administration</h1><p>Sign in to manage original photos, YouTube films and featured images.</p><form autocomplete="on" id="loginForm"><label>Admin login ID<input autocomplete="username" id="loginId" inputmode="numeric" name="username" required="" value="9027"/></label><label>Password<input autocomplete="current-password" id="loginPassword" name="password" required="" type="password"/></label><button class="enquiry-submit" type="submit">Sign in</button></form><p aria-live="polite" class="form-status" id="loginMessage"></p></section><section class="admin-dashboard" hidden="" id="adminDashboard"><div class="admin-heading"><div><p class="site-kicker">LIVE CLOUD DASHBOARD</p><h1>Media library</h1><p>Photos upload directly to the studio’s R2 storage. Films are linked from the studio’s YouTube channel.</p></div><button class="subtle-button" id="logout" type="button">Sign out</button></div><div class="upload-panel"><h2>Upload original photographs</h2><p>Select a gallery category and choose the studio’s photos. Originals stay in the studio’s private Cloudflare storage. “All” shows every category on the public site.</p><label class="upload-category-label">Publish in gallery category<select aria-label="Upload category" id="uploadCategory"><option value="general">All (main gallery)</option><option value="film">Film</option><option value="indoor">Indoor photography</option></select></label><label class="upload-button">Choose photos<input accept="image/jpeg,image/png,image/webp,image/avif" hidden="" id="upload" multiple="" type="file"/></label><p class="upload-help">Original photo quality is retained. The website creates smaller preview images for fast gallery browsing. Maximum 200 MiB per photo. Cloudflare R2 includes 10 GB-month of free storage, then usage charges apply.</p><div aria-live="polite" class="upload-queue" id="uploadQueue"></div></div>
+<div class="upload-panel video-link-panel"><h2>Add a YouTube film</h2>
+<p>Upload a film to the studio’s YouTube channel as Public or Unlisted, allow embedding, then paste its share link here. The website loads the player only when a visitor opens the film.</p>
+<form id="youtubeForm" class="youtube-form">
+<label>Video title<input id="youtubeTitle" name="title" type="text" maxlength="120" placeholder="Wedding film title" autocomplete="off" required></label>
+<label>YouTube share link<input id="youtubeUrl" name="url" type="url" inputmode="url" placeholder="https://youtu.be/xxxxxxxxxxx" autocomplete="url" required></label>
+<label>Gallery section<select id="youtubeCategory" name="category"><option value="film">Film</option><option value="general">All (main gallery)</option><option value="indoor">Indoor photography</option></select></label>
+<button type="submit" class="upload-button" id="youtubeSubmit">Add film to gallery</button>
+</form><p class="upload-help">YouTube automatically chooses the best available playback resolution for each viewer. Upload at 1080p or 4K and wait for HD processing. The website cannot force a minimum quality.</p>
+</div><p aria-live="polite" class="upload-status" id="adminMessage"></p><div class="admin-toolbar"><strong id="mediaTotal">Loading media…</strong></div><div class="admin-grid" id="adminGrid"></div><button class="load-more" hidden="" id="adminMore" type="button">Load more media</button></section></main><footer class="site-footer" id="siteFooter">
+<div class="footer-main">
+<div class="footer-intro"><a class="footer-wordmark" href="index.html">VAHINI WEDDINGS</a><p>Honest moments. Lasting memories.</p><p>Wedding photography and films from Manjeri, Kerala.</p></div>
+<div class="footer-links"><h2>EXPLORE</h2><a href="index.html">Home</a><a href="about.html">About us</a><a href="services.html">Services</a><a href="gallery.html">Gallery &amp; films</a><a href="contact.html">Contact</a></div>
+<div class="footer-contact"><h2>GET IN TOUCH</h2><a href="tel:+919895066015">+91 98950 66015</a><a href="https://wa.me/919895066015" rel="noopener noreferrer" target="_blank">WhatsApp enquiry ↗</a><address>Vahini Studio<br/>Mekkah Tower<br/>Court Road, Manjeri, Malappuram<br/>Kerala 676121</address><a class="footer-map" href="https://maps.app.goo.gl/6cdW9ZWCkGwZEn8e9" rel="noopener noreferrer" target="_blank">Open map ↗</a></div>
+</div>
+<div class="footer-bottom"><span>© <span id="year"></span> Vahini Weddings. All rights reserved.</span></div>
+</footer><script defer="" src="site.js"></script><script defer="" src="admin.js"></script></body></html>
